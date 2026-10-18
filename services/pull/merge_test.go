@@ -6,6 +6,8 @@ package pull
 import (
 	"testing"
 
+	issues_model "gitea.dev/models/issues"
+	"gitea.dev/models/unittest"
 	"gitea.dev/modules/git"
 
 	"github.com/stretchr/testify/assert"
@@ -136,4 +138,13 @@ func TestResolveMergeMessageTemplate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "rebase template", tmpl)
 	})
+}
+
+func TestHasPullRequestCommitBeenMerged_MissingCommit(t *testing.T) {
+	require.NoError(t, unittest.PrepareTestDatabase())
+	pr := unittest.AssertExistsAndLoadBean(t, &issues_model.PullRequest{ID: 1})
+	pr.MergedCommitID = "0123456789abcdef0123456789abcdef01234567"
+	merged, err := hasPullRequestCommitBeenMerged(t.Context(), pr)
+	require.NoError(t, err)
+	assert.False(t, merged)
 }

@@ -286,6 +286,11 @@ func hasPullRequestCommitBeenMerged(ctx context.Context, pr *issues_model.PullRe
 	if err := pr.LoadBaseRepo(ctx); err != nil {
 		return false, err
 	}
+	// the recorded merge intent may point to a commit which never reached the repo (e.g. the push failed)
+	if err := gitcmd.NewCommand("cat-file", "-e").AddDynamicArguments(pr.MergedCommitID + "^{commit}").WithRepo(pr.BaseRepo).Run(ctx); err != nil {
+		log.Warn("%-v recorded merge commit %s is missing, treating it as not merged: %v", pr, pr.MergedCommitID, err)
+		return false, nil
+	}
 	return git.IsCommitInBranch(ctx, pr.BaseRepo, pr.MergedCommitID, pr.BaseBranch)
 }
 
